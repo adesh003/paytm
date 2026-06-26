@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-const { type } = require('node:os');
 
 const userSchema = new mongoose.Schema({
     username:{
