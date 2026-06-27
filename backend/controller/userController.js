@@ -1,9 +1,11 @@
 import express from "express";
 import User from "../model/userModel.js"
-import bcrypt from "bcryptjs";
+import bcrypt, { hash } from "bcryptjs";
 import jwt from "jsonwebtoken";
+import Zod, { object } from 'zod'
+import AuthMiddleware from "../Authmiddleware.js";
 
-const SinupBody = Zod.object({
+const signupBody = Zod.object({
     username: Zod.string(),
     email: Zod.string().email(),
     password: Zod.string()
@@ -86,7 +88,53 @@ export async function userLogin(req, res) {
         token
     })
 
+}
 
+export async function updateUserData(req, res) {
+    const { username, email, password } = req.body;
 
+    const updateData = {}
 
+    if (username) updateData.username = username;
+    if (email) updateData.email = email;
+    if (password) {
+        updateData.password = await bcrypt.hash(password, 10)
+    }
+
+    // if(object.keys(updateData).length === 0){
+    //     return res.status(400).json({
+    //         message:"No data provided for update"
+    //     })
+    // }
+
+    await User.updateOne({
+           _id:req.userId
+    },updateData)
+
+     return res.json({
+        message: "Update successful"
+    });
+}
+
+export async function bulkSearch(req,res) {
+      const filter = req.query.filter || "";
+
+    const users = await User.find({
+        $or: [{
+            username: {
+                "$regex": filter
+            }
+        }, {
+            lastName: {
+                "$regex": filter
+            }
+        }]
+    })
+
+    res.json({
+        user: users.map(user => ({
+            username: user.username,
+            _id: user._id
+        }))
+    })
 }

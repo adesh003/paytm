@@ -2,7 +2,7 @@ import express from 'express'
 const app = express();
 import {connectDb} from "./db/db.js"
 import { connect } from 'mongoose';
-import {cors} from 'cors'
+import cors from 'cors'
 import routes from "./Routes/routes.js"
 
 app.use(cors());

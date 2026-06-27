@@ -1,19 +1,19 @@
-import jwt from "jsonwebtoken"
+import jwt from "jsonwebtoken";
 
-function AuthMiddleware(req,res,next){
-    const token = req.headers.token
+function AuthMiddleware(req, res, next) {
+    try {
+        const token = req.headers.token;
 
-    const decodeUser = jwt.verify(token,"adeshkumarboss")
+        const decodedUser = jwt.verify(token, "adeshkumartheboss");
 
-    if(decodeUser){
-        req.userId=decodeUser.userId
+        req.userId = decodedUser.userId;
+
         next();
+    } catch (err) {
+        return res.status(403).json({
+            message: "Invalid token"
+        });
     }
-
-   else{
-            res.status(403).json({
-                message:"token is invalid"
-            })
-        }
 }
+
 export default AuthMiddleware;
