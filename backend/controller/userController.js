@@ -4,6 +4,8 @@ import bcrypt, { hash } from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Zod, { object } from 'zod'
 import AuthMiddleware from "../Authmiddleware.js";
+import Account from "../model/acoountModel.js";
+import mongoose from "mongoose";
 
 const signupBody = Zod.object({
     username: Zod.string(),
@@ -42,9 +44,16 @@ export async function userSignup(req, res) {
     const user = await User.create({
         username: req.body.username,
         email: req.body.email,
-
         password: hashedPassword,
     })
+
+    const userId = user._id;
+
+    await Account.create({
+        userId,
+        balance: 1 + Math.random() * 10000
+    })
+
 
     res.status(200).json({
         message: "user Sinup up successfully",
@@ -136,5 +145,60 @@ export async function bulkSearch(req,res) {
             username: user.username,
             _id: user._id
         }))
+    })
+}
+
+export async function userBalance(req,res) {
+    const account = await Account.findOne({
+        userId:req.userId
+    });
+console.log(account)
+    res.json({
+        balance: account.balance
+    })
+}
+
+export async function transfer(req,res) {
+    const session = await mongoose.startSession();
+
+    session.startTransaction();
+    const {amount , to }= req.body
+    
+    const account = await Account.findOne({
+        userId:req.userId   
+    })
+
+
+if(!account || account.balance <amount){
+await session.abortTransaction();
+return res.status(400).json({
+    message:"Insufficient balance"
+})
+
+}
+const toAccount = await Account.findOne({
+    userId:to
+}).session(session);
+
+if(!toAccount){
+    await session.abortTransaction();
+    return res.status(400).json({
+            message: "Invalid account"
+        });
+}
+// performing transection
+
+await Account.updateOne({
+    userId:req.userId
+},{
+    $inc:{balance:-amount}
+}).session(session);
+
+    await Account.updateOne({ userId: to }, { $inc: { balance: amount } }).session(session);
+
+
+    await session.commitTransaction()
+    res.json({
+        message:"Transfer Successfull"
     })
 }
